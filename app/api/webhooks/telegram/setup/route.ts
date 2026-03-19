@@ -11,12 +11,8 @@ export async function GET(req: NextRequest) {
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const appUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL;
-
-  if (!token) return NextResponse.json({ error: 'TELEGRAM_BOT_TOKEN not set' }, { status: 400 });
-  if (!appUrl) return NextResponse.json({ error: 'NEXTAUTH_URL not set' }, { status: 400 });
-
-  const webhookUrl = `${appUrl.replace(/\/$/, '')}/api/webhooks/telegram`;
+  const appUrl = (process.env.NEXTAUTH_URL || process.env.VERCEL_URL || '').replace(/\/$/, '');
+  const webhookUrl = appUrl.startsWith('http') ? `${appUrl}/api/webhooks/telegram` : `https://${appUrl}/api/webhooks/telegram`;
 
   const res = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
     method: 'POST',
