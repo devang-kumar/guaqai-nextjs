@@ -1,0 +1,178 @@
+services:
+  # 1. PostgreSQL with pgvector (shared by app, n8n, dify)
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - guaq_net
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Redis (shared cache for n8n and Dify)
+  redis:
+    image: redis:alpine
+    restart: always
+    networks:
+      - guaq_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # 3. GuaqAI Next.js App
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://admin:admin@postgres:5432/guaqai_db
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-guaqai-prod-secret}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      N8N_TICKET_WEBHOOK_URL: http://n8n:5678/webhook/new-ticket
+      DEMO_MODE: "false"
+    networks:
+      - guaq_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # 4. n8n (Automation / Webhooks)
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: n8n_db
+      DB_POSTGRESDB_USER: admin
+      DB_POSTGRESDB_PASSWORD: admin
+      N8N_ENCRYPTION_KEY: supersecretkey123
+      N8N_SECURE_COOKIE: "false"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - guaq_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # 5. Dify API (AI/RAG Brain)
+  dify-api:
+    image: langgenius/dify-api:latest
+    restart: always
+    ports:
+      - "20081:5001"
+    environment:
+      DB_USERNAME: admin
+      DB_PASSWORD: admin
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: dify_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 1
+      CELERY_BROKER_URL: redis://redis:6379/1
+      MODE: api
+      VECTOR_STORE: pgvector
+      STORAGE_TYPE: local
+      STORAGE_LOCAL_PATH: /app/api/storage
+      SECRET_KEY: supersecretkey123
+    volumes:
+      - dify_storage:/app/api/storage
+    networks:
+      - guaq_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # 6. Dify Worker
+  dify-worker:
+    image: langgenius/dify-api:latest
+    restart: always
+    environment:
+      DB_USERNAME: admin
+      DB_PASSWORD: admin
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: dify_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 1
+      CELERY_BROKER_URL: redis://redis:6379/1
+      MODE: worker
+      VECTOR_STORE: pgvector
+      SECRET_KEY: supersecretkey123
+      STORAGE_TYPE: local
+      STORAGE_LOCAL_PATH: /app/api/storage
+    volumes:
+      - dify_storage:/app/api/storage
+    networks:
+      - guaq_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # 7. Dify Web UI
+  dify-web:
+    image: langgenius/dify-web:latest
+    restart: always
+    ports:
+      - "20080:3000"
+    environment:
+      CONSOLE_API_URL: http://localhost:20081
+      APP_API_URL: http://localhost:20081
+    networks:
+      - guaq_net
+    depends_on:
+      - dify-api
+
+  # 8. MinIO (S3-compatible storage for knowledge base files)
+  minio:
+    image: minio/minio
+    restart: always
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: guaqai
+      MINIO_ROOT_PASSWORD: GuaqAI@2025
+    volumes:
+      - minio_data:/data
+    networks:
+      - guaq_net
+
+volumes:
+  postgres_data:
+  n8n_data:
+  dify_storage:
+  minio_data:
+
+networks:
+  guaq_net:
+    driver: bridge

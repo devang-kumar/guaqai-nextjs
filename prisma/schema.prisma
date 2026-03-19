@@ -1,0 +1,85 @@
+// GuaqAI - Prisma Schema
+// Run: npx prisma generate && npx prisma db push
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Multi-tenant hotel properties
+model Client {
+  client_id        Int      @id @default(autoincrement())
+  client_name      String   @db.VarChar(100)
+  sector           String   @db.VarChar(50)
+  whatsapp_id      String   @unique @db.VarChar(50)
+  dify_api_key     String   @db.VarChar(100)
+  dashboard_config Json?
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now())
+
+  logs    WhatsAppLog[]
+  users   User[]
+  tickets Ticket[]
+  reviews Review[]
+}
+
+// WhatsApp / Chat message logs
+model WhatsAppLog {
+  log_id          Int      @id @default(autoincrement())
+  client_id       Int
+  client          Client   @relation(fields: [client_id], references: [client_id])
+  phone           String   @db.VarChar(20)
+  direction       String   @db.VarChar(10) // 'IN' | 'OUT'
+  message_content String   @db.Text
+  sentiment_score String?  @db.VarChar(20)
+  timestamp       DateTime @default(now())
+}
+
+// Staff / Admin users
+model User {
+  id            String   @id @default(uuid())
+  client_id     Int
+  client        Client   @relation(fields: [client_id], references: [client_id])
+  email         String   @unique
+  password_hash String
+  name          String
+  role          String   // 'admin' | 'staff'
+  phone         String?
+  permissions   String[] // array of view keys
+  created_at    DateTime @default(now())
+}
+
+// Service tickets
+model Ticket {
+  id          String   @id @default(cuid())
+  client_id   Int
+  client      Client   @relation(fields: [client_id], references: [client_id])
+  room_id     String
+  guest_name  String
+  category    String   // Maintenance | Housekeeping | F&B | Concierge | Front Desk
+  description String   @db.Text
+  status      String   @default("New") // New | In Progress | Resolved
+  priority    String   @default("Medium") // Low | Medium | High | Critical
+  assigned_to String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+
+// Guest reviews from Google / TripAdvisor
+model Review {
+  id          String   @id @default(cuid())
+  client_id   Int
+  client      Client   @relation(fields: [client_id], references: [client_id])
+  guest_name  String
+  rating      Int
+  platform    String   // 'google' | 'tripadvisor'
+  comment     String   @db.Text
+  response    String?  @db.Text
+  status      String   @default("Pending") // Pending | Replied
+  review_date DateTime @default(now())
+  created_at  DateTime @default(now())
+}
