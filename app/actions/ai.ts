@@ -1,24 +1,35 @@
 'use server';
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+// Groq — free tier, fast inference, no credit card needed
+// Get key at: https://console.groq.com
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const MODEL = 'llama-3.3-70b-versatile';
 
-async function geminiChat(systemPrompt: string, userMessage: string): Promise<string> {
-  const res = await fetch(`${GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
+async function groqChat(systemPrompt: string, userMessage: string): Promise<string> {
+  const res = await fetch(GROQ_API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+    },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+      model: MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      temperature: 0.7,
+      max_tokens: 512,
     }),
   });
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Gemini API error: ${err}`);
+    throw new Error(`Groq API error: ${err}`);
   }
 
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? 'I could not process that request.';
+  return data.choices?.[0]?.message?.content ?? 'I could not process that request.';
 }
 
 const BASE_INSTRUCTION = `
@@ -50,7 +61,7 @@ Current Stage: ${stage}
 Knowledge Base: ${knowledgeBase || 'No documents uploaded.'}
 Affiliate Contacts: ${affiliateContacts || 'No contacts available.'}`;
 
-  return geminiChat(system, userMessage);
+  return groqChat(system, userMessage);
 }
 
 export async function generateReviewReply(
@@ -61,10 +72,10 @@ export async function generateReviewReply(
   signature: string
 ): Promise<string> {
   const system = `You are the Guest Relations Manager for ${hotelName}. Write professional, warm, personalized replies to guest reviews. Sign off with: "${signature}". Keep it under 100 words. No markdown.`;
-  return geminiChat(system, `Guest: ${guestName} | Rating: ${rating}/5 | Review: "${comment}"`);
+  return groqChat(system, `Guest: ${guestName} | Rating: ${rating}/5 | Review: "${comment}"`);
 }
 
 export async function generateHelpAnswer(question: string): Promise<string> {
   const system = `You are the Help Desk Assistant for "GuaqAI", a Hospitality Operations Platform. Answer questions about the dashboard, inbox, tickets, reviews, campaigns, analytics, and settings. Be concise. No markdown.`;
-  return geminiChat(system, question);
+  return groqChat(system, question);
 }
