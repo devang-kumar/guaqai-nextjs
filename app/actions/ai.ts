@@ -36,7 +36,7 @@ Knowledge Base: ${knowledgeBase || 'No documents uploaded.'}
 Affiliate Contacts: ${affiliateContacts || 'No contacts available.'}`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.0-flash',
     config: { systemInstruction },
     contents: [{ role: 'user', parts: [{ text: userMessage }] }],
   });
@@ -59,7 +59,7 @@ Sign off with: "${signature}"
 Keep it under 100 words. Do not use markdown.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.0-flash',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   });
 
@@ -72,7 +72,7 @@ Answer questions about how to use the dashboard, inbox, tickets, reviews, campai
 Be concise and helpful. Use plain text, no markdown.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.0-flash',
     config: { systemInstruction },
     contents: [{ role: 'user', parts: [{ text: question }] }],
   });
