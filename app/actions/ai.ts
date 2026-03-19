@@ -1,31 +1,24 @@
 'use server';
 
-const XAI_API_URL = 'https://api.x.ai/v1/chat/completions';
-const MODEL = 'grok-3-mini';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
-async function grokChat(systemPrompt: string, userMessage: string): Promise<string> {
-  const res = await fetch(XAI_API_URL, {
+async function geminiChat(systemPrompt: string, userMessage: string): Promise<string> {
+  const res = await fetch(`${GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.XAI_API_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
     }),
   });
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Grok API error: ${err}`);
+    throw new Error(`Gemini API error: ${err}`);
   }
 
   const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? 'I could not process that request.';
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? 'I could not process that request.';
 }
 
 const BASE_INSTRUCTION = `
@@ -57,7 +50,7 @@ Current Stage: ${stage}
 Knowledge Base: ${knowledgeBase || 'No documents uploaded.'}
 Affiliate Contacts: ${affiliateContacts || 'No contacts available.'}`;
 
-  return grokChat(system, userMessage);
+  return geminiChat(system, userMessage);
 }
 
 export async function generateReviewReply(
@@ -68,11 +61,10 @@ export async function generateReviewReply(
   signature: string
 ): Promise<string> {
   const system = `You are the Guest Relations Manager for ${hotelName}. Write professional, warm, personalized replies to guest reviews. Sign off with: "${signature}". Keep it under 100 words. No markdown.`;
-  const user = `Guest: ${guestName} | Rating: ${rating}/5 | Review: "${comment}"`;
-  return grokChat(system, user);
+  return geminiChat(system, `Guest: ${guestName} | Rating: ${rating}/5 | Review: "${comment}"`);
 }
 
 export async function generateHelpAnswer(question: string): Promise<string> {
   const system = `You are the Help Desk Assistant for "GuaqAI", a Hospitality Operations Platform. Answer questions about the dashboard, inbox, tickets, reviews, campaigns, analytics, and settings. Be concise. No markdown.`;
-  return grokChat(system, question);
+  return geminiChat(system, question);
 }
