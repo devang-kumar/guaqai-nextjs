@@ -47,7 +47,7 @@ Affiliate Contacts: ${affiliateContacts || 'No contacts available.'}`;
 
   const aiClient = getAiClient();
   const response = await aiClient.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     config: { systemInstruction },
     contents: [{ role: 'user', parts: [{ text: userMessage }] }],
   });
@@ -71,7 +71,7 @@ Keep it under 100 words. Do not use markdown.`;
 
   const aiClient = getAiClient();
   const response = await aiClient.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   });
 
@@ -85,7 +85,7 @@ Be concise and helpful. Use plain text, no markdown.`;
 
   const aiClient = getAiClient();
   const response = await aiClient.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     config: { systemInstruction },
     contents: [{ role: 'user', parts: [{ text: question }] }],
   });
