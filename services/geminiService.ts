@@ -22,7 +22,11 @@ export async function generateBotResponse(
     body: JSON.stringify({ message: userMessage, stage, hotelName: 'Country Inn & Suites', knowledgeBase, affiliateContacts }),
   });
 
-  if (!res.ok) throw new Error('AI service error');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('AI chat backend error:', errText);
+    throw new Error('AI service error: ' + errText);
+  }
   const data = await res.json();
   return data.reply;
 }
@@ -40,7 +44,11 @@ export async function generateReviewReply(
     body: JSON.stringify({ guestName, rating, comment, hotelName, signature }),
   });
 
-  if (!res.ok) throw new Error('AI service error');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('AI review reply backend error:', errText);
+    throw new Error('AI service error: ' + errText);
+  }
   const data = await res.json();
   return data.reply;
 }
@@ -52,7 +60,11 @@ export async function generateHelpAnswer(question: string): Promise<string> {
     body: JSON.stringify({ message: question, stage: 'HELP', hotelName: 'GuaqAI Platform', knowledgeBase: '', affiliateContacts: '' }),
   });
 
-  if (!res.ok) throw new Error('AI service error');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('AI help reply backend error:', errText);
+    throw new Error('AI service error: ' + errText);
+  }
   const data = await res.json();
   return data.reply;
 }

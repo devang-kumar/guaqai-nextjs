@@ -25,8 +25,8 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json({ reply });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[AI CHAT]', err);
-    return NextResponse.json({ error: 'AI service unavailable' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'AI service unavailable' }, { status: 500 });
   }
 }

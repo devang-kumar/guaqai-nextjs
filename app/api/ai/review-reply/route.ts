@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
     const { guestName, rating, comment, hotelName, signature } = await req.json();
     const reply = await generateReviewReply(guestName, rating, comment, hotelName, signature);
     return NextResponse.json({ reply });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[AI REVIEW REPLY]', err);
-    return NextResponse.json({ error: 'AI service unavailable' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'AI service unavailable' }, { status: 500 });
   }
 }

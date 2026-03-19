@@ -2,7 +2,17 @@
 
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+// Initialize lazily to prevent module load crash if API key is missing
+let ai: GoogleGenAI | null = null;
+function getAiClient() {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is missing in environment variables');
+  }
+  if (!ai) {
+    ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  }
+  return ai;
+}
 
 const BASE_INSTRUCTION = `
 You are 'Guaq', the AI Concierge for Country Inn & Suites by Radisson, Manipal.
@@ -35,7 +45,8 @@ Current Stage: ${stage}
 Knowledge Base: ${knowledgeBase || 'No documents uploaded.'}
 Affiliate Contacts: ${affiliateContacts || 'No contacts available.'}`;
 
-  const response = await ai.models.generateContent({
+  const aiClient = getAiClient();
+  const response = await aiClient.models.generateContent({
     model: 'gemini-2.0-flash',
     config: { systemInstruction },
     contents: [{ role: 'user', parts: [{ text: userMessage }] }],
@@ -58,7 +69,8 @@ Review: "${comment}"
 Sign off with: "${signature}"
 Keep it under 100 words. Do not use markdown.`;
 
-  const response = await ai.models.generateContent({
+  const aiClient = getAiClient();
+  const response = await aiClient.models.generateContent({
     model: 'gemini-2.0-flash',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   });
@@ -71,7 +83,8 @@ export async function generateHelpAnswer(question: string): Promise<string> {
 Answer questions about how to use the dashboard, inbox, tickets, reviews, campaigns, analytics, and settings.
 Be concise and helpful. Use plain text, no markdown.`;
 
-  const response = await ai.models.generateContent({
+  const aiClient = getAiClient();
+  const response = await aiClient.models.generateContent({
     model: 'gemini-2.0-flash',
     config: { systemInstruction },
     contents: [{ role: 'user', parts: [{ text: question }] }],
