@@ -16,23 +16,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        {/* Tailwind CSS via CDN - compatible with all Node versions */}
-        <script src="https://cdn.tailwindcss.com" async></script>
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
       <body
-        style={{
-          fontFamily: 'Inter, sans-serif',
-          backgroundColor: '#020617',
-          color: '#e2e8f0',
-          margin: 0,
-          padding: 0,
-          height: '100vh',
-          overflow: 'hidden',
-        }}
+        className="bg-slate-950 text-slate-200 antialiased"
+        style={{ fontFamily: 'Inter, sans-serif' }}
       >
         {children}
       </body>
