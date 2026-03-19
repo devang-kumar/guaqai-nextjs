@@ -6,6 +6,10 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
 
 async function groqChat(systemPrompt: string, userMessage: string): Promise<string> {
+  if (!process.env.GROQ_API_KEY) {
+    return 'AI service is not configured yet. Please contact the hotel staff for assistance.';
+  }
+
   const res = await fetch(GROQ_API_URL, {
     method: 'POST',
     headers: {
@@ -25,7 +29,8 @@ async function groqChat(systemPrompt: string, userMessage: string): Promise<stri
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Groq API error: ${err}`);
+    console.error('[GROQ ERROR]', err);
+    return 'I am unable to process your request right now. Please contact the front desk for assistance.';
   }
 
   const data = await res.json();

@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ reply });
   } catch (err: any) {
     console.error('[AI CHAT]', err);
-    return NextResponse.json({ error: err.message || 'AI service unavailable' }, { status: 500 });
+    // Return a graceful reply instead of a 500 so the UI doesn't break
+    return NextResponse.json({ reply: 'I am unable to process your request right now. Please contact the front desk for assistance.' });
   }
 }

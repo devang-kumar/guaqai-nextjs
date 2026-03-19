@@ -17,6 +17,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ reply });
   } catch (err: any) {
     console.error('[AI REVIEW REPLY]', err);
-    return NextResponse.json({ error: err.message || 'AI service unavailable' }, { status: 500 });
+    return NextResponse.json({ reply: 'Thank you for your feedback. We will respond shortly.' });
   }
 }
