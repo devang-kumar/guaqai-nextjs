@@ -6,7 +6,10 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const isDemo = process.env.DEMO_MODE === 'true' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || !process.env.DATABASE_URL;
+  if (!session && !isDemo) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
     const { guestName, rating, comment, hotelName, signature } = await req.json();
