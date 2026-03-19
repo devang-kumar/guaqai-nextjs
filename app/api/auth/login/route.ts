@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { signToken } from '@/lib/auth';
-import bcrypt from 'bcryptjs';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, clientId } = await req.json();
+    const { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
     // Demo mode: allow hardcoded credentials when DB is not set up
-    if (process.env.DEMO_MODE === 'true' || !process.env.DATABASE_URL?.includes('postgresql')) {
+    if (process.env.DEMO_MODE === 'true' || !process.env.DATABASE_URL) {
       const demoUsers: Record<string, { role: 'admin' | 'staff'; name: string }> = {
         'admin@hotel.com': { role: 'admin', name: 'Admin User' },
         'frontdesk@hotel.com': { role: 'staff', name: 'Front Desk' },
@@ -34,6 +34,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
+    // Real DB mode — lazy import to avoid build-time failures
+    const { prisma } = await import('@/lib/prisma');
+    const bcrypt = await import('bcryptjs');
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
 
@@ -45,7 +49,7 @@ export async function POST(req: NextRequest) {
       email: user.email,
       name: user.name,
       role: user.role as 'admin' | 'staff',
-      permissions: user.permissions,
+      permissions: (user as any).permissions ?? [],
       client_id: user.client_id,
     });
 
