@@ -370,7 +370,7 @@ const LiveSimulator: React.FC<LiveSimulatorProps> = ({
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-xl z-20"></div>
 
               {/* ... Header and Chat Body ... */}
-              <div className="bg-slate-900 text-white px-6 pt-3 pb-2 flex justify-between items-center text-[10px] z-10 select-none shrink-0">
+              <div className="bg-[#2AABEE] text-white px-6 pt-3 pb-2 flex justify-between items-center text-[10px] z-10 select-none shrink-0">
                   <span>9:41</span>
                   <div className="flex gap-1.5">
                       <Wifi size={12}/>
@@ -378,30 +378,36 @@ const LiveSimulator: React.FC<LiveSimulatorProps> = ({
                   </div>
               </div>
 
-              <div className="bg-slate-800/90 backdrop-blur-md p-3 flex items-center gap-3 border-b border-white/5 z-10 shrink-0">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md overflow-hidden">
+              {/* Telegram-style header — blue gradient like Telegram */}
+              <div className="bg-gradient-to-r from-[#2AABEE] to-[#229ED9] p-3 flex items-center gap-3 z-10 shrink-0">
+                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-bold shadow-md overflow-hidden shrink-0">
                     {branding.logoUrl ? (
                          <img src={branding.logoUrl} alt="B" className="w-full h-full object-cover"/>
                     ) : (
                          <span>{branding.appName.charAt(0)}</span>
                     )}
                 </div>
-                <div>
-                    <h3 className="text-white font-semibold text-sm">Guaq Assistant</h3>
-                    <p className="text-blue-400 text-[10px] flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Online
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-white font-semibold text-sm truncate">Guaq Concierge Bot</h3>
+                    <p className="text-white/70 text-[10px] flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full"></span> bot
                     </p>
+                </div>
+                {/* Telegram top-right icons */}
+                <div className="flex gap-3 text-white/80">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950 scrollbar-hide">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#1c2733] scrollbar-hide">
                  {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.sender === ChatSender.USER ? 'justify-end' : 'justify-start'} ${msg.sender === ChatSender.SYSTEM ? 'justify-center' : ''}`}>
                         {msg.sender === ChatSender.SYSTEM ? (
                             <span className="text-[10px] text-slate-500 bg-slate-900/80 px-2 py-1 rounded-lg border border-slate-800 animate-in fade-in zoom-in">{msg.text}</span>
                         ) : (
                             <div className={`max-w-[85%] p-3 text-sm rounded-2xl shadow-sm break-words animate-in slide-in-from-bottom-2 ${
-                                msg.sender === ChatSender.USER ? 'bg-blue-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-200 rounded-bl-none border border-slate-700'
+                                msg.sender === ChatSender.USER ? 'bg-[#2AABEE] text-white rounded-br-none' : 'bg-[#2b3a4a] text-slate-200 rounded-bl-none border border-white/5'
                             }`}>
                                 {msg.isMedia && <div className="flex items-center gap-2 mb-1 text-xs opacity-80"><FileText size={12}/> Attachment</div>}
                                 {msg.text}
@@ -423,8 +429,8 @@ const LiveSimulator: React.FC<LiveSimulatorProps> = ({
                  <div ref={messagesEndRef}/>
               </div>
 
-              <div className="p-3 bg-slate-900 border-t border-white/5 shrink-0">
-                  <div className="flex items-center gap-2 bg-slate-800 rounded-full px-4 py-2 border border-slate-700">
+              <div className="p-3 bg-[#1c2733] border-t border-white/5 shrink-0">
+                  <div className="flex items-center gap-2 bg-[#2b3a4a] rounded-full px-4 py-2 border border-white/5">
                       <button onClick={() => fileInputRef.current?.click()} className="text-slate-400 hover:text-white transition">
                           <Paperclip size={16}/>
                       </button>
@@ -438,7 +444,7 @@ const LiveSimulator: React.FC<LiveSimulatorProps> = ({
                         placeholder="Type..."
                         className="bg-transparent flex-1 text-white text-sm outline-none placeholder-slate-500"
                       />
-                      <button onClick={() => handleSendMessage()} className="text-blue-500">
+                      <button onClick={() => handleSendMessage()} className="text-[#2AABEE]">
                           <Send size={18} />
                       </button>
                   </div>
