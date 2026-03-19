@@ -1,33 +1,45 @@
 'use server';
 
-import { GoogleGenAI } from '@google/genai';
+const XAI_API_URL = 'https://api.x.ai/v1/chat/completions';
+const MODEL = 'grok-3-mini';
 
-// Initialize lazily to prevent module load crash if API key is missing
-let ai: GoogleGenAI | null = null;
-function getAiClient() {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY is missing in environment variables');
+async function grokChat(systemPrompt: string, userMessage: string): Promise<string> {
+  const res = await fetch(XAI_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.XAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Grok API error: ${err}`);
   }
-  if (!ai) {
-    ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  }
-  return ai;
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? 'I could not process that request.';
 }
 
 const BASE_INSTRUCTION = `
 You are 'Guaq', the AI Concierge for Country Inn & Suites by Radisson, Manipal.
 Your tone is professional, warm, luxurious, and helpful.
-You are concise because you are chatting on WhatsApp.
+You are concise because you are chatting on Telegram.
 
 KEY BEHAVIORS:
 1. Welcome: If the user says "Hi" or "Arrived", welcome them, offer the WiFi password (CountryInn_Guest / 123456).
-2. Pulse Check: If asked about pulse check, ask for a rating 1-5.
-   - 1-3: Apologize deeply.
-   - 4-5: Celebrate and ask for Google Review.
-3. Pre-Arrival: Say "Greetings from Country Inn! We are excited to welcome you tomorrow. To speed up your check-in, could you please share a photo of your ID card?"
-4. Checkout: If user mentions "checkout", "leaving", or "bill", acknowledge it and assure them the Front Desk is preparing their folio.
-5. Documents: Use the provided Knowledge Base to answer specific questions about amenities, menus, or rules.
-6. Contacts: If a guest asks for a taxi, doctor, or external service, provide the contact from the Affiliate Contacts list.
+2. Pulse Check: If asked about pulse check, ask for a rating 1-5. 1-3: Apologize deeply. 4-5: Celebrate and ask for Google Review.
+3. Pre-Arrival: Ask guest to share a photo of their ID card to speed up check-in.
+4. Checkout: If user mentions "checkout", "leaving", or "bill", assure them the Front Desk is preparing their folio.
+5. Documents: Use the Knowledge Base to answer questions about amenities, menus, or rules.
+6. Contacts: Provide affiliate contacts for taxi, doctor, or external services.
 
 Do not use heavy markdown formatting.
 `;
@@ -39,20 +51,13 @@ export async function generateBotResponse(
   knowledgeBase: string,
   affiliateContacts: string
 ): Promise<string> {
-  const systemInstruction = `${BASE_INSTRUCTION}
+  const system = `${BASE_INSTRUCTION}
 Hotel Name: ${hotelName}
 Current Stage: ${stage}
 Knowledge Base: ${knowledgeBase || 'No documents uploaded.'}
 Affiliate Contacts: ${affiliateContacts || 'No contacts available.'}`;
 
-  const aiClient = getAiClient();
-  const response = await aiClient.models.generateContent({
-    model: 'gemini-1.5-flash',
-    config: { systemInstruction },
-    contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-  });
-
-  return response.text ?? 'I apologize, I could not process that request.';
+  return grokChat(system, userMessage);
 }
 
 export async function generateReviewReply(
@@ -62,33 +67,12 @@ export async function generateReviewReply(
   hotelName: string,
   signature: string
 ): Promise<string> {
-  const prompt = `You are the Guest Relations Manager for ${hotelName}.
-Write a professional, warm, and personalized reply to this guest review.
-Guest: ${guestName} | Rating: ${rating}/5
-Review: "${comment}"
-Sign off with: "${signature}"
-Keep it under 100 words. Do not use markdown.`;
-
-  const aiClient = getAiClient();
-  const response = await aiClient.models.generateContent({
-    model: 'gemini-1.5-flash',
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-  });
-
-  return response.text ?? 'Thank you for your feedback!';
+  const system = `You are the Guest Relations Manager for ${hotelName}. Write professional, warm, personalized replies to guest reviews. Sign off with: "${signature}". Keep it under 100 words. No markdown.`;
+  const user = `Guest: ${guestName} | Rating: ${rating}/5 | Review: "${comment}"`;
+  return grokChat(system, user);
 }
 
 export async function generateHelpAnswer(question: string): Promise<string> {
-  const systemInstruction = `You are the Help Desk Assistant for "GuaqAI", a Hospitality Operations Platform.
-Answer questions about how to use the dashboard, inbox, tickets, reviews, campaigns, analytics, and settings.
-Be concise and helpful. Use plain text, no markdown.`;
-
-  const aiClient = getAiClient();
-  const response = await aiClient.models.generateContent({
-    model: 'gemini-1.5-flash',
-    config: { systemInstruction },
-    contents: [{ role: 'user', parts: [{ text: question }] }],
-  });
-
-  return response.text ?? 'Please contact support for assistance.';
+  const system = `You are the Help Desk Assistant for "GuaqAI", a Hospitality Operations Platform. Answer questions about the dashboard, inbox, tickets, reviews, campaigns, analytics, and settings. Be concise. No markdown.`;
+  return grokChat(system, question);
 }
